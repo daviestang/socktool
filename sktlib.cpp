@@ -4,7 +4,7 @@
 #include <QAction>
 
 #include "sktlib.h"
-#include "../libraries/libskt/libskt.h"
+#include <libskt.h>
 
 void SocketLib::initNetwork(QComboBox *box)
 {
@@ -79,8 +79,8 @@ void handle_new_conn(void *args)
     evcb->ev_in = recv_msg;
     evcb->ev_out = NULL;
     evcb->ev_err = NULL;
-    struct skt_ev *e = skt_ev_create(fd, EVENT_READ, evcb, (void *)tcp);
-    if (-1 == skt_ev_add(e)) {
+    struct gevent *e = gevent_create(fd, EVENT_READ, evcb, (void *)tcp);
+    if (-1 == gevent_add(e)) {
 //        err("event_add failed!\n");
     }
 }
@@ -107,7 +107,7 @@ void *tcp_server(void *args)
 
 bool TcpServerSkt::open(QString ip, quint16 port)
 {
-    m_fd = skt_tcp_bind_listen(qPrintable(ip), port);
+    m_fd = skt_tcp_bind_listen(qPrintable(ip), port, 0);
     if (m_fd == -1) {
         return false;
     }
@@ -167,7 +167,7 @@ UdpServerSkt::~UdpServerSkt()
 bool UdpServerSkt::open(QString ip, quint16 port)
 {
     QString msg("Open UDP Server %1.");
-    m_fd = skt_udp_bind(qPrintable(ip), port);
+    m_fd = skt_udp_bind(qPrintable(ip), port, 0);
     if (m_fd == -1) {
         msg = msg.arg("failed");
         printMsg(msg);
@@ -226,7 +226,7 @@ bool TcpClientSkt::open(QString ip, quint16 port)
     m_dst_port = port;
 
     struct skt_addr addr;
-    if (-1 == skt_get_addr_by_fd(&addr, m_fd)) {
+    if (-1 == skt_getaddr_by_fd(m_fd, &addr)) {
         return false;
     }
     m_src_port = addr.port;
@@ -281,7 +281,7 @@ bool UdpClientSkt::open(QString ip, quint16 port)
     m_dst_port = port;
 
     struct skt_addr addr;
-    if (-1 == skt_get_addr_by_fd(&addr, m_fd)) {
+    if (-1 == skt_getaddr_by_fd(m_fd, &addr)) {
         return false;
     }
     m_src_port = addr.port;
